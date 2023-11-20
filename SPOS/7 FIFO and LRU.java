@@ -1,84 +1,86 @@
 import java.util.*;
 
-class PagingSimulation {
-    private int pageFrameCapacity;
-    private List<Integer> pageReferenceSequence;
+class PageSimulator {
+    private int[] pageReferenceSequence;
+    private int numFrames;
+    private LinkedList<Integer> frameList;
 
-    public PagingSimulation(int pageFrameCapacity, List<Integer> pageReferenceSequence) {
-        this.pageFrameCapacity = pageFrameCapacity;
+    public PageSimulator(int[] pageReferenceSequence, int numFrames) {
         this.pageReferenceSequence = pageReferenceSequence;
+        this.numFrames = numFrames;
+        this.frameList = new LinkedList<>();
     }
 
-    // First In Last Out (FIFO) Page Replacement Algorithm
-    public int simulateFIFO() {
-        Set<Integer> pageFrames = new LinkedHashSet<>();
-        Queue<Integer> fifoQueue = new LinkedList<>();
-        int pageFaultCount = 0;
+    public void simulateFIFO() {
+        System.out.println("FIFO Page Replacement Algorithm Simulation:");
+        int pageFaults = 0;
 
         for (int page : pageReferenceSequence) {
-            if (!pageFrames.contains(page)) {
-                pageFaultCount++;
-
-                if (pageFrames.size() == pageFrameCapacity) {
-                    int removedPage = fifoQueue.poll();
-                    pageFrames.remove(removedPage);
+            if (!frameList.contains(page)) {
+                if (frameList.size() < numFrames) {
+                    frameList.add(page);
+                } else {
+                    int removedPage = frameList.poll();
+                    frameList.add(page);
+                    System.out.println("Page fault: Replace " + removedPage + " with " + page);
+                    pageFaults++;
                 }
-
-                pageFrames.add(page);
-                fifoQueue.offer(page);
             }
         }
 
-        return pageFaultCount;
+        System.out.println("Total page faults using FIFO: " + pageFaults);
     }
 
-    // Least Recently Used (LRU) Page Replacement Algorithm
-    public int simulateLRU() {
-        Set<Integer> pageFrames = new LinkedHashSet<>();
-        Map<Integer, Integer> pageLastUsedTime = new HashMap<>();
-        int time = 0;
-        int pageFaultCount = 0;
+    public void simulateLRU() {
+        System.out.println("\nLRU Page Replacement Algorithm Simulation:");
+        int pageFaults = 0;
+        LinkedHashMap<Integer, Integer> pageLastUsedMap = new LinkedHashMap<>(numFrames, 0.75f, true);
 
         for (int page : pageReferenceSequence) {
-            time++;
-
-            if (!pageFrames.contains(page)) {
-                pageFaultCount++;
-
-                if (pageFrames.size() == pageFrameCapacity) {
-                    int leastRecentlyUsedPage = Collections.min(pageLastUsedTime.entrySet(), Map.Entry.comparingByValue()).getKey();
-                    pageFrames.remove(leastRecentlyUsedPage);
-                    pageLastUsedTime.remove(leastRecentlyUsedPage);
+            if (!pageLastUsedMap.containsKey(page)) {
+                if (pageLastUsedMap.size() < numFrames) {
+                    pageLastUsedMap.put(page, 0);
+                } else {
+                    int leastRecentlyUsedPage = Collections.min(pageLastUsedMap.entrySet(), Map.Entry.comparingByValue()).getKey();
+                    pageLastUsedMap.remove(leastRecentlyUsedPage);
+                    pageLastUsedMap.put(page, 0);
+                    System.out.println("Page fault: Replace " + leastRecentlyUsedPage + " with " + page);
+                    pageFaults++;
                 }
-
-                pageFrames.add(page);
             }
 
-            pageLastUsedTime.put(page, time);
+            // Update the last used time of the current page
+            for (int key : pageLastUsedMap.keySet()) {
+                pageLastUsedMap.put(key, pageLastUsedMap.get(key) + 1);
+            }
+            pageLastUsedMap.put(page, 0);
         }
 
-        return pageFaultCount;
+        System.out.println("Total page faults using LRU: " + pageFaults);
     }
+}
 
+class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter the number of page frames: ");
-        int pageFrameCapacity = scanner.nextInt();
-        scanner.nextLine(); // Consume the newline character
+        // Input: Number of frames
+        System.out.print("Enter the number of frames: ");
+        int numFrames = scanner.nextInt();
 
+        // Input: Page reference sequence
         System.out.print("Enter the page reference sequence (space-separated): ");
+        scanner.nextLine(); // Consume the newline character
         String[] inputSequence = scanner.nextLine().split(" ");
-        List<Integer> pageReferenceSequence = Arrays.stream(inputSequence)
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
+        int[] pageReferenceSequence = Arrays.stream(inputSequence).mapToInt(Integer::parseInt).toArray();
 
-        PagingSimulation pagingSimulation = new PagingSimulation(pageFrameCapacity, pageReferenceSequence);
+        // Create PageSimulator object
+        PageSimulator pageSimulator = new PageSimulator(pageReferenceSequence, numFrames);
 
-        int fifoPageFaults = pagingSimulation.simulateFIFO();
-        System.out.println("FIFO Page Replacement Algorithm - Page Faults: " + fifoPageFaults);
+        // Simulate FIFO
+        pageSimulator.simulateFIFO();
 
-        int lruPageFaults = pagingSimulation.simulateLRU();
-        System.out.println("LRU Page Replacement Algorithm - Page Faults: " + lruPageFaults);
+        // Simulate LRU
+        pageSimulator.simulateLRU();
     }
 }
