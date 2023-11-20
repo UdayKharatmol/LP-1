@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class PageReplacementSimulation {
+class PageReplacementSimulation {
     private int pageFrameCapacity;
     private List<Integer> pageReferenceSequence;
 
